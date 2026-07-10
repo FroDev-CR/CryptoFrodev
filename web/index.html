@@ -45,6 +45,7 @@
   .cont { padding:12px; }
 
   #chart { height:400px; }
+  #eqchart { height:220px; }
 
   .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; }
   .stat { border:2px inset var(--gris); padding:8px 12px; background:#010a04; }
@@ -107,12 +108,12 @@
     <div class="precio-box"><span id="precio">$—</span> <span id="cambio" style="font-size:22px"></span>
       <span id="senal" class="cian" style="font-size:22px">[ CARGANDO... ]</span></div>
     <div class="cont" style="padding-top:4px"><div id="chart"></div>
-      <div style="font-size:16px;color:#5aa;margin-top:4px">— <span class="cian">SMA 20</span> / <span class="mag">SMA 60</span> · el demo compra cuando la cian cruza arriba de la magenta</div>
+      <div style="font-size:16px;color:#5aa;margin-top:4px">— <span class="cian">SMA 20</span> / <span class="mag">SMA 60</span> · el bot compra cuando la cian cruza arriba de la magenta y vende al cruce contrario</div>
     </div>
   </div>
 
   <div class="win">
-    <div class="tbar">☁️ NUBE.EXE — bot real 24/7 (GitHub Actions)<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
+    <div class="tbar">☁️ NUBE.EXE — bot 24/7 (GitHub Actions)<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
     <div class="cont">
       <div class="grid">
         <div class="stat"><div class="lbl">EQUITY 24/7</div><div class="val verde" id="n-equity">—</div></div>
@@ -120,9 +121,10 @@
         <div class="stat"><div class="lbl">POSICIÓN</div><div class="val" id="n-pos">—</div></div>
         <div class="stat"><div class="lbl">ÚLT. REVISIÓN</div><div class="val chico cian" id="n-rev">—</div></div>
       </div>
+      <div id="eqchart" style="margin-top:12px"></div>
       <table style="margin-top:10px"><thead><tr><th>FECHA</th><th>ACCIÓN</th><th>PRECIO</th><th>EQUITY</th></tr></thead>
       <tbody id="n-tbody"><tr><td colspan="4" style="color:#5aa" id="n-msg">>> conectando con la nube... <span class="blink">_</span></td></tr></tbody></table>
-      <div style="font-size:16px;color:#5aa;margin-top:6px">este portafolio vive en la nube y opera aunque nadie mire la página · revisa el mercado cada 15 min</div>
+      <div style="font-size:16px;color:#5aa;margin-top:6px">este portafolio vive en la nube y opera aunque nadie mire la página · revisa el mercado cada 15 min · dinero ficticio</div>
     </div>
   </div>
 
@@ -144,45 +146,19 @@
     </div>
   </div>
 
-  <div class="win">
-    <div class="tbar">💾 PORTAFOLIO.EXE — tu demo local $15 ficticios<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
-    <div class="cont grid">
-      <div class="stat"><div class="lbl">EQUITY</div><div class="val verde" id="equity">—</div></div>
-      <div class="stat"><div class="lbl">GANANCIA</div><div class="val" id="pnl">—</div></div>
-      <div class="stat"><div class="lbl">POSICIÓN</div><div class="val" id="pos">—</div></div>
-      <div class="stat"><div class="lbl">TRADES</div><div class="val cian" id="ntrades">—</div></div>
-    </div>
-  </div>
-
-  <div class="win">
-    <div class="tbar">📜 OPERACIONES.LOG — demo local<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
-    <div class="cont">
-      <table><thead><tr><th>FECHA</th><th>ACCIÓN</th><th>PRECIO</th><th>EQUITY</th></tr></thead>
-      <tbody id="tbody"><tr><td colspan="4" style="color:#5aa">>> sin operaciones... el sistema vigila el mercado <span class="blink">_</span></td></tr></tbody></table>
-      <div style="margin-top:10px;text-align:right"><button onclick="reiniciar()">⟲ REINICIAR DEMO</button></div>
-    </div>
-  </div>
-
   <div class="status"><span><span class="led"></span>SISTEMA EN LÍNEA</span>
     <span id="reloj">--:--:-- UTC</span>
-    <span>DATOS: BINANCE + KRAKEN</span><span>MODO: DEMO</span></div>
+    <span>DATOS: BINANCE + KRAKEN</span><span>PAPER TRADING</span></div>
 </div>
 
 <script>
 // ============ CONFIGURA AQUI TU GIST ============
-// URL raw de tu gist: https://gist.githubusercontent.com/TU_USUARIO/ID_DEL_GIST/raw/estado.json
 const GIST_RAW = 'https://gist.githubusercontent.com/FroDev-CR/ca83049c7861dd15d87f165d75a16633/raw/estado.json';
 // ================================================
 
 const API = 'https://data-api.binance.vision/api/v3';
-const FEE = 0.001, CAPITAL = 15;
 const fmt = n => '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
 const fmtP = n => '$' + n.toLocaleString('en-US', {maximumFractionDigits:0});
-
-let estado = JSON.parse(localStorage.getItem('cryptobot_demo') || 'null') ||
-             { usd: CAPITAL, btc: 0, pos: 0, trades: [] };
-const guardar = () => localStorage.setItem('cryptobot_demo', JSON.stringify(estado));
-function reiniciar(){ estado = { usd: CAPITAL, btc: 0, pos: 0, trades: [] }; guardar(); location.reload(); }
 
 const chart = LightweightCharts.createChart(document.getElementById('chart'), {
   layout: { background: { color: '#000000' }, textColor: '#00ff66',
@@ -198,6 +174,17 @@ const velas = chart.addCandlestickSeries({ upColor:'#00ff66', downColor:'#ff3355
 const lineaF = chart.addLineSeries({ color:'#00e5ff', lineWidth:2, priceLineVisible:false, lastValueVisible:false });
 const lineaS = chart.addLineSeries({ color:'#ff00d4', lineWidth:2, priceLineVisible:false, lastValueVisible:false });
 
+const eqchart = LightweightCharts.createChart(document.getElementById('eqchart'), {
+  layout: { background: { color: '#000000' }, textColor: '#00ff66',
+            fontFamily: "'VT323', monospace", fontSize: 14 },
+  grid: { vertLines: { color: '#0a2214' }, horzLines: { color: '#0a2214' } },
+  timeScale: { timeVisible: true, borderColor: '#00ff66' },
+  rightPriceScale: { borderColor: '#00ff66' },
+  autoSize: true
+});
+const eqLinea = eqchart.addAreaSeries({ lineColor:'#00ff66', topColor:'#00ff6633',
+  bottomColor:'#00ff6605', lineWidth:2 });
+
 function sma(closes, n, times){
   const out = [];
   for (let i = n-1; i < closes.length; i++){
@@ -207,7 +194,7 @@ function sma(closes, n, times){
   return out;
 }
 
-let ultimoPrecio = null, senalTxt = 'CARGANDO';
+let ultimoPrecio = null, senalTxt = 'CARGANDO', nubeSt = null;
 
 async function cargar(){
   const r = await fetch(`${API}/klines?symbol=BTCUSDT&interval=1h&limit=300`);
@@ -227,44 +214,9 @@ async function cargar(){
   el.textContent = `[ SEÑAL: ${senalTxt} ]`;
   el.className = senal ? 'verde' : 'rojo';
   el.style.fontSize = '22px';
-
-  const precio = data[data.length-1].close;
-  operarDemo(senal, precio);
-  pintarPanel(precio);
 }
 
-function operarDemo(senal, precio){
-  if (senal === 1 && estado.pos === 0){
-    estado.btc = (estado.usd * (1-FEE)) / precio; estado.usd = 0; estado.pos = 1;
-    estado.trades.push({ t: Date.now(), a: 'COMPRA', p: precio, eq: estado.btc*precio });
-    guardar();
-  } else if (senal === 0 && estado.pos === 1){
-    estado.usd = estado.btc * precio * (1-FEE); estado.btc = 0; estado.pos = 0;
-    estado.trades.push({ t: Date.now(), a: 'VENTA', p: precio, eq: estado.usd });
-    guardar();
-  }
-}
-
-function pintarPanel(precio){
-  const eq = estado.usd + estado.btc * precio;
-  const pnl = (eq/CAPITAL - 1) * 100;
-  document.getElementById('equity').textContent = fmt(eq);
-  const p = document.getElementById('pnl');
-  p.textContent = (pnl>=0?'+':'') + pnl.toFixed(2) + '%';
-  p.className = 'val ' + (pnl>=0?'verde':'rojo');
-  const pos = document.getElementById('pos');
-  pos.textContent = estado.pos ? 'COMPRADO' : 'FUERA';
-  pos.className = 'val ' + (estado.pos ? 'verde' : 'mag');
-  document.getElementById('ntrades').textContent = estado.trades.length;
-  if (estado.trades.length){
-    document.getElementById('tbody').innerHTML = estado.trades.slice().reverse().slice(0,15).map(t =>
-      `<tr><td>${new Date(t.t).toLocaleString()}</td>
-       <td class="${t.a==='COMPRA'?'verde':'rojo'}">${t.a}</td>
-       <td>${fmtP(t.p)}</td><td>${fmt(t.eq)}</td></tr>`).join('');
-  }
-}
-
-// ---- Bot real 24/7 (lee el gist que escribe GitHub Actions) ----
+// ---- Bot 24/7 (lee el gist que escribe GitHub Actions) ----
 async function botReal(){
   const msg = document.getElementById('n-msg');
   if (GIST_RAW.includes('PEGA_AQUI')){
@@ -274,6 +226,7 @@ async function botReal(){
   try {
     const r = await fetch(GIST_RAW + '?t=' + Date.now());
     const st = await r.json();
+    nubeSt = st;
     const pnl = (st.equity / st.capital_inicial - 1) * 100;
     document.getElementById('n-equity').textContent = fmt(st.equity);
     const p = document.getElementById('n-pnl');
@@ -284,9 +237,15 @@ async function botReal(){
     pos.className = 'val ' + (st.posicion ? 'verde' : 'mag');
     const mins = Math.round((Date.now() - new Date(st.ultima_revision)) / 60000);
     document.getElementById('n-rev').textContent = mins <= 1 ? 'ahora' : `hace ${mins} min`;
+
+    if (st.historia && st.historia.length > 1){
+      eqLinea.setData(st.historia.map(h => ({ time: Math.floor(new Date(h.t)/1000), value: h.eq })));
+      eqchart.timeScale().fitContent();
+    }
+
     const tb = document.getElementById('n-tbody');
     if (st.trades && st.trades.length){
-      tb.innerHTML = st.trades.slice().reverse().slice(0,8).map(t =>
+      tb.innerHTML = st.trades.slice().reverse().slice(0,10).map(t =>
         `<tr><td>${t.t.slice(0,16).replace('T',' ')}</td>
          <td class="${t.a==='COMPRA'?'verde':'rojo'}">${t.a}</td>
          <td>${fmtP(t.p)}</td><td>${fmt(t.eq)}</td></tr>`).join('');
@@ -308,9 +267,8 @@ async function tick(){
     el.style.color = sube ? '#00ff66' : '#ff3355';
     el.style.textShadow = `0 0 14px ${sube ? '#00ff66' : '#ff3355'}`;
     ultimoPrecio = precio;
-    pintarPanel(precio);
     document.getElementById('cinta').textContent =
-      ` *** CRYPTOFRODEV *** BTC ${fmtP(precio)} *** SEÑAL: ${senalTxt} *** SISTEMA OPERANDO *** `;
+      ` *** CRYPTOFRODEV *** BTC ${fmtP(precio)} *** SEÑAL: ${senalTxt} *** SISTEMA OPERANDO 24/7 *** `;
   } catch(e){}
 }
 
@@ -349,10 +307,9 @@ document.getElementById('chatform').addEventListener('submit', async (e) => {
   robot.classList.add('hablando');
   const espera = burbuja('bot', 'PROCESANDO...');
   try {
-    const eq = estado.usd + estado.btc * (ultimoPrecio || 0);
     const contexto = { precio_btc: ultimoPrecio, senal: senalTxt,
-      equity_demo: +eq.toFixed(2), posicion: estado.pos ? 'COMPRADO' : 'FUERA',
-      trades_demo: estado.trades.length };
+      bot_nube: nubeSt ? { equity: nubeSt.equity, posicion: nubeSt.posicion ? 'COMPRADO' : 'FUERA',
+        trades: (nubeSt.trades || []).length, ultima_revision: nubeSt.ultima_revision } : 'sin datos' };
     const r = await fetch('/api/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: historial.slice(-8), contexto })

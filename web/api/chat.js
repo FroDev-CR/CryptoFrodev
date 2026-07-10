@@ -44,9 +44,9 @@ terminal. Respuestas CORTAS: maximo 60 palabras.
 
 Contexto en vivo de la pagina: ${JSON.stringify(contexto)}.
 La pagina muestra: velas de BTC/USDT de 1 hora, dos medias moviles (SMA 20 cian, SMA 60 magenta),
-una ventana NUBE.EXE con un bot 24/7 que corre en GitHub Actions cada 15 min (portafolio compartido
-de $15 ficticios), y un portafolio DEMO local que solo opera con la pagina abierta. Ambos compran
-cuando la SMA 20 cruza arriba de la SMA 60 y venden al cruce contrario (comision simulada 0.1%).
+y una ventana NUBE.EXE con el bot 24/7 que corre en GitHub Actions cada 15 min: un portafolio
+compartido de $15 ficticios con su grafica de equity historica. Compra cuando la SMA 20 cruza
+arriba de la SMA 60 y vende al cruce contrario (comision simulada 0.1%).
 
 Reglas estrictas:
 - Explicas conceptos de trading y que hace el bot, con datos del contexto.
