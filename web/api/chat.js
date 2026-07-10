@@ -7,11 +7,11 @@ export default async function handler(req, res) {
   }
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
-    return res.status(500).json({ text: "[ERROR] Falta GEMINI_API_KEY en las variables de entorno de Vercel." });
+    return res.status(200).json({ text: "[ERROR] Falta GEMINI_API_KEY en las variables de entorno de Vercel." });
   }
 
   const { messages = [], contexto = {} } = req.body || {};
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
   const system = `Eres FRODEV-3000, un asistente robot retro-futurista del año 2000 que vive
 en una pagina de trading llamada CryptoFroDev. Personalidad: hablas como robot ochentero-noventero
@@ -48,11 +48,14 @@ Reglas estrictas:
       }
     );
     const j = await r.json();
+    if (j?.error) {
+      return res.status(200).json({ text: `[ERROR DE GOOGLE] ${j.error.message || j.error.status}` });
+    }
     const text =
       j?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "[ERROR DE NUCLEO] no pude procesar eso, mae. intenta de nuevo.";
+      "[ERROR DE NUCLEO] respuesta vacia del modelo. intenta de nuevo, mae.";
     return res.status(200).json({ text });
   } catch (e) {
-    return res.status(200).json({ text: "[FALLO DE ENLACE] mi cerebro no responde. intenta en un momento." });
+    return res.status(200).json({ text: `[FALLO DE ENLACE] ${e.message || "mi cerebro no responde"}` });
   }
 }
