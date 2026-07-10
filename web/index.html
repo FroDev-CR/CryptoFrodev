@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRYPTOBOT 2000 ~ BTC/USDT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+  :root { --lime:#00ff66; --cyan:#00e5ff; --mag:#ff00d4; --rojo:#ff3355; --gris:#c0c0c0; }
+  * { margin:0; box-sizing:border-box; }
+  body { background:#02040a; color:var(--lime); font-family:'VT323', monospace; font-size:20px;
+         background-image: radial-gradient(circle at 20% 10%, #0a1430 0%, transparent 40%),
+                           radial-gradient(circle at 80% 90%, #180a2e 0%, transparent 40%); }
+  body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:99;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px); }
+  .wrap { max-width:1050px; margin:auto; padding:14px; }
+
+  .marquee { background:#000; border:2px solid var(--lime); overflow:hidden; white-space:nowrap;
+             box-shadow:0 0 12px #00ff6644; margin-bottom:14px; }
+  .marquee span { display:inline-block; padding:4px 0 4px 100%; animation:scroll 18s linear infinite;
+                  color:var(--lime); text-shadow:0 0 6px var(--lime); }
+  @keyframes scroll { to { transform:translateX(-100%); } }
+
+  h1 { font-family:'Press Start 2P', monospace; font-size:26px; text-align:center; margin:10px 0 4px;
+       background:linear-gradient(180deg,#fff 0%,#9ff 35%,#0af 50%,#fff 65%,#57f 100%);
+       -webkit-background-clip:text; background-clip:text; color:transparent;
+       filter:drop-shadow(0 0 8px #00e5ff88); letter-spacing:2px; }
+  .sub { text-align:center; color:var(--cyan); margin-bottom:14px; text-shadow:0 0 8px var(--cyan); }
+  .blink { animation:blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+
+  .rainbow { height:4px; margin:12px 0; border-radius:2px;
+    background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00); background-size:200% 100%;
+    animation:rain 3s linear infinite; }
+  @keyframes rain { to { background-position:200% 0; } }
+
+  .win { border:2px outset var(--gris); background:#000a; margin-bottom:14px; box-shadow:4px 4px 0 #000; }
+  .tbar { display:flex; align-items:center; gap:8px; padding:3px 6px; color:#fff;
+          background:linear-gradient(90deg,#000082,#1084d0); font-size:17px; }
+  .tbar .btns { margin-left:auto; display:flex; gap:3px; }
+  .tbar .btns i { width:18px; height:16px; background:var(--gris); border:2px outset #fff;
+                  font-style:normal; color:#000; font-size:12px; text-align:center; line-height:12px; }
+  .cont { padding:12px; }
+
+  #chart { height:400px; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; }
+  .stat { border:2px inset var(--gris); padding:8px 12px; background:#010a04; }
+  .stat .lbl { color:#5aa; font-size:16px; letter-spacing:1px; }
+  .stat .val { font-size:34px; text-shadow:0 0 8px currentColor; }
+  .verde { color:var(--lime); } .rojo { color:var(--rojo); } .cian { color:var(--cyan); } .mag { color:var(--mag); }
+
+  #precio { font-size:56px; color:var(--lime); text-shadow:0 0 14px var(--lime); transition:color .2s, text-shadow .2s; }
+  .precio-box { text-align:center; padding:6px 0 2px; }
+
+  table { width:100%; border-collapse:collapse; font-size:19px; }
+  th { text-align:left; color:var(--cyan); border-bottom:1px dashed var(--cyan); padding:5px; font-weight:normal; }
+  td { padding:5px; border-bottom:1px dotted #1c4; }
+
+  button { font-family:'VT323', monospace; font-size:17px; background:var(--gris); color:#000;
+           border:2px outset #fff; padding:2px 14px; cursor:pointer; }
+  button:active { border-style:inset; }
+
+  .status { display:flex; gap:18px; align-items:center; border:2px inset var(--gris);
+            background:#000; padding:4px 10px; font-size:17px; color:#7fa; flex-wrap:wrap; }
+  .led { width:10px; height:10px; border-radius:50%; background:var(--lime); box-shadow:0 0 8px var(--lime);
+         display:inline-block; margin-right:6px; animation:blink 2s steps(1) infinite; }
+  .pie { text-align:center; color:#39d; margin:14px 0 6px; font-size:17px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="marquee"><span id="cinta">*** CRYPTOBOT 2000 *** CONECTANDO CON EL MERCADO... *** BIENVENIDO OPERADOR ***</span></div>
+
+  <h1>CRYPTOBOT 2000</h1>
+  <p class="sub">~ sistema de especulación automática ~ BTC/USDT ~ <span class="blink">█</span></p>
+  <div class="rainbow"></div>
+
+  <div class="win">
+    <div class="tbar">📈 MERCADO.EXE — velas 1h + SMA 20/60<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
+    <div class="precio-box"><span id="precio">$—</span> <span id="cambio" style="font-size:22px"></span>
+      <span id="senal" class="cian" style="font-size:22px">[ CARGANDO... ]</span></div>
+    <div class="cont" style="padding-top:4px"><div id="chart"></div>
+      <div style="font-size:16px;color:#5aa;margin-top:4px">— <span class="cian">SMA 20</span> / <span class="mag">SMA 60</span> · el demo compra cuando la cian cruza arriba de la magenta</div>
+    </div>
+  </div>
+
+  <div class="win">
+    <div class="tbar">💾 PORTAFOLIO.EXE — demo $15 ficticios<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
+    <div class="cont grid">
+      <div class="stat"><div class="lbl">EQUITY</div><div class="val verde" id="equity">—</div></div>
+      <div class="stat"><div class="lbl">GANANCIA</div><div class="val" id="pnl">—</div></div>
+      <div class="stat"><div class="lbl">POSICIÓN</div><div class="val" id="pos">—</div></div>
+      <div class="stat"><div class="lbl">TRADES</div><div class="val cian" id="ntrades">—</div></div>
+    </div>
+  </div>
+
+  <div class="win">
+    <div class="tbar">📜 OPERACIONES.LOG<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
+    <div class="cont">
+      <table><thead><tr><th>FECHA</th><th>ACCIÓN</th><th>PRECIO</th><th>EQUITY</th></tr></thead>
+      <tbody id="tbody"><tr><td colspan="4" style="color:#5aa">>> sin operaciones... el sistema vigila el mercado <span class="blink">_</span></td></tr></tbody></table>
+      <div style="margin-top:10px;text-align:right"><button onclick="reiniciar()">⟲ REINICIAR DEMO</button></div>
+    </div>
+  </div>
+
+  <div class="status"><span><span class="led"></span>SISTEMA EN LÍNEA</span>
+    <span id="reloj">--:--:-- UTC</span>
+    <span>DATOS: BINANCE</span><span>MODO: DEMO</span></div>
+
+  <p class="pie">© 2000-2026 CRYPTOBOT™ · mejor visto en 800×600 · esto no es asesoría financiera · dinero 100% ficticio</p>
+</div>
+
+<script>
+const API = 'https://data-api.binance.vision/api/v3';
+const FEE = 0.001, CAPITAL = 15;
+const fmt = n => '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+const fmtP = n => '$' + n.toLocaleString('en-US', {maximumFractionDigits:0});
+
+let estado = JSON.parse(localStorage.getItem('cryptobot_demo') || 'null') ||
+             { usd: CAPITAL, btc: 0, pos: 0, trades: [] };
+const guardar = () => localStorage.setItem('cryptobot_demo', JSON.stringify(estado));
+function reiniciar(){ estado = { usd: CAPITAL, btc: 0, pos: 0, trades: [] }; guardar(); location.reload(); }
+
+const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+  layout: { background: { color: '#000000' }, textColor: '#00ff66',
+            fontFamily: "'VT323', monospace", fontSize: 15 },
+  grid: { vertLines: { color: '#0a2214' }, horzLines: { color: '#0a2214' } },
+  timeScale: { timeVisible: true, borderColor: '#00ff66' },
+  rightPriceScale: { borderColor: '#00ff66' },
+  crosshair: { vertLine: { color: '#00e5ff' }, horzLine: { color: '#00e5ff' } },
+  autoSize: true
+});
+const velas = chart.addCandlestickSeries({ upColor:'#00ff66', downColor:'#ff3355',
+  wickUpColor:'#00ff66', wickDownColor:'#ff3355', borderVisible:false });
+const lineaF = chart.addLineSeries({ color:'#00e5ff', lineWidth:2, priceLineVisible:false, lastValueVisible:false });
+const lineaS = chart.addLineSeries({ color:'#ff00d4', lineWidth:2, priceLineVisible:false, lastValueVisible:false });
+
+function sma(closes, n, times){
+  const out = [];
+  for (let i = n-1; i < closes.length; i++){
+    let s = 0; for (let j = i-n+1; j <= i; j++) s += closes[j];
+    out.push({ time: times[i], value: s/n });
+  }
+  return out;
+}
+
+let ultimoPrecio = null, senalTxt = 'CARGANDO';
+
+async function cargar(){
+  const r = await fetch(`${API}/klines?symbol=BTCUSDT&interval=1h&limit=300`);
+  const kl = await r.json();
+  const data = kl.map(k => ({ time: k[0]/1000, open:+k[1], high:+k[2], low:+k[3], close:+k[4] }));
+  velas.setData(data);
+  const cerradas = data.slice(0, -1);
+  const closes = cerradas.map(d => d.close), times = cerradas.map(d => d.time);
+  lineaF.setData(sma(closes, 20, times));
+  lineaS.setData(sma(closes, 60, times));
+
+  const f = closes.slice(-20).reduce((a,b)=>a+b,0)/20;
+  const s = closes.slice(-60).reduce((a,b)=>a+b,0)/60;
+  const senal = f > s ? 1 : 0;
+  senalTxt = senal ? 'ALCISTA ▲' : 'BAJISTA ▼';
+  const el = document.getElementById('senal');
+  el.textContent = `[ SEÑAL: ${senalTxt} ]`;
+  el.className = senal ? 'verde' : 'rojo';
+  el.style.fontSize = '22px';
+
+  const precio = data[data.length-1].close;
+  operarDemo(senal, precio);
+  pintarPanel(precio);
+}
+
+function operarDemo(senal, precio){
+  if (senal === 1 && estado.pos === 0){
+    estado.btc = (estado.usd * (1-FEE)) / precio; estado.usd = 0; estado.pos = 1;
+    estado.trades.push({ t: Date.now(), a: 'COMPRA', p: precio, eq: estado.btc*precio });
+    guardar();
+  } else if (senal === 0 && estado.pos === 1){
+    estado.usd = estado.btc * precio * (1-FEE); estado.btc = 0; estado.pos = 0;
+    estado.trades.push({ t: Date.now(), a: 'VENTA', p: precio, eq: estado.usd });
+    guardar();
+  }
+}
+
+function pintarPanel(precio){
+  const eq = estado.usd + estado.btc * precio;
+  const pnl = (eq/CAPITAL - 1) * 100;
+  document.getElementById('equity').textContent = fmt(eq);
+  const p = document.getElementById('pnl');
+  p.textContent = (pnl>=0?'+':'') + pnl.toFixed(2) + '%';
+  p.className = 'val ' + (pnl>=0?'verde':'rojo');
+  const pos = document.getElementById('pos');
+  pos.textContent = estado.pos ? 'COMPRADO' : 'FUERA';
+  pos.className = 'val ' + (estado.pos ? 'verde' : 'mag');
+  document.getElementById('ntrades').textContent = estado.trades.length;
+  if (estado.trades.length){
+    document.getElementById('tbody').innerHTML = estado.trades.slice().reverse().slice(0,15).map(t =>
+      `<tr><td>${new Date(t.t).toLocaleString()}</td>
+       <td class="${t.a==='COMPRA'?'verde':'rojo'}">${t.a}</td>
+       <td>${fmtP(t.p)}</td><td>${fmt(t.eq)}</td></tr>`).join('');
+  }
+}
+
+async function tick(){
+  try {
+    const r = await fetch(`${API}/ticker/price?symbol=BTCUSDT`);
+    const precio = parseFloat((await r.json()).price);
+    const el = document.getElementById('precio');
+    el.textContent = fmtP(precio);
+    const sube = ultimoPrecio === null || precio >= ultimoPrecio;
+    el.style.color = sube ? '#00ff66' : '#ff3355';
+    el.style.textShadow = `0 0 14px ${sube ? '#00ff66' : '#ff3355'}`;
+    ultimoPrecio = precio;
+    pintarPanel(precio);
+    document.getElementById('cinta').textContent =
+      ` *** CRYPTOBOT 2000 *** BTC ${fmtP(precio)} *** SEÑAL: ${senalTxt} *** EL QUE NO ARRIESGA NO PIERDE *** `;
+  } catch(e){}
+}
+
+async function cambio24h(){
+  try {
+    const r = await fetch(`${API}/ticker/24hr?symbol=BTCUSDT`);
+    const c = parseFloat((await r.json()).priceChangePercent);
+    const el = document.getElementById('cambio');
+    el.textContent = (c>=0?'+':'') + c.toFixed(2) + '% (24h)';
+    el.className = c>=0 ? 'verde' : 'rojo';
+  } catch(e){}
+}
+
+setInterval(() => {
+  document.getElementById('reloj').textContent =
+    new Date().toISOString().slice(11,19) + ' UTC';
+}, 1000);
+
+cargar(); tick(); cambio24h();
+setInterval(tick, 5000);
+setInterval(cargar, 60000);
+setInterval(cambio24h, 60000);
+</script>
+</body>
+</html>

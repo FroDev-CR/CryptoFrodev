@@ -1,0 +1,4 @@
+,capital_final,retorno_total_%,CAGR_%,max_drawdown_%,sharpe,n_trades,win_rate_%
+Buy & Hold,23101.69,131.02,33.9,-52.97,0.86,0.0,
+SMA 20/60 crossover,15207.29,52.07,15.74,-36.93,0.6,11.0,45.5
+RSI reversion (30/60),12323.66,23.24,7.56,-20.34,0.4,6.0,83.3

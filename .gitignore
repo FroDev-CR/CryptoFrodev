@@ -1,0 +1,11 @@
+# SECRETOS - jamas subir
+config.json
+
+# Estado y logs del bot
+state.json
+results/trades_log.csv
+results/equity_log.csv
+
+# Python
+__pycache__/
+*.pyc
