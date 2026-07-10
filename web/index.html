@@ -50,6 +50,7 @@
   .stat { border:2px inset var(--gris); padding:8px 12px; background:#010a04; }
   .stat .lbl { color:#5aa; font-size:16px; letter-spacing:1px; }
   .stat .val { font-size:34px; text-shadow:0 0 8px currentColor; }
+  .stat .val.chico { font-size:22px; }
   .verde { color:var(--lime); } .rojo { color:var(--rojo); } .cian { color:var(--cyan); } .mag { color:var(--mag); }
 
   #precio { font-size:56px; color:var(--lime); text-shadow:0 0 14px var(--lime); transition:color .2s, text-shadow .2s; }
@@ -111,6 +112,21 @@
   </div>
 
   <div class="win">
+    <div class="tbar">☁️ NUBE.EXE — bot real 24/7 (GitHub Actions)<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
+    <div class="cont">
+      <div class="grid">
+        <div class="stat"><div class="lbl">EQUITY 24/7</div><div class="val verde" id="n-equity">—</div></div>
+        <div class="stat"><div class="lbl">GANANCIA</div><div class="val" id="n-pnl">—</div></div>
+        <div class="stat"><div class="lbl">POSICIÓN</div><div class="val" id="n-pos">—</div></div>
+        <div class="stat"><div class="lbl">ÚLT. REVISIÓN</div><div class="val chico cian" id="n-rev">—</div></div>
+      </div>
+      <table style="margin-top:10px"><thead><tr><th>FECHA</th><th>ACCIÓN</th><th>PRECIO</th><th>EQUITY</th></tr></thead>
+      <tbody id="n-tbody"><tr><td colspan="4" style="color:#5aa" id="n-msg">>> conectando con la nube... <span class="blink">_</span></td></tr></tbody></table>
+      <div style="font-size:16px;color:#5aa;margin-top:6px">este portafolio vive en la nube y opera aunque nadie mire la página · revisa el mercado cada 15 min</div>
+    </div>
+  </div>
+
+  <div class="win">
     <div class="tbar">🤖 FRODEV-3000.EXE — asistente de a bordo<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
     <div class="cont" style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;">
       <div class="robot" id="robot">
@@ -129,7 +145,7 @@
   </div>
 
   <div class="win">
-    <div class="tbar">💾 PORTAFOLIO.EXE — demo $15 ficticios<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
+    <div class="tbar">💾 PORTAFOLIO.EXE — tu demo local $15 ficticios<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
     <div class="cont grid">
       <div class="stat"><div class="lbl">EQUITY</div><div class="val verde" id="equity">—</div></div>
       <div class="stat"><div class="lbl">GANANCIA</div><div class="val" id="pnl">—</div></div>
@@ -139,7 +155,7 @@
   </div>
 
   <div class="win">
-    <div class="tbar">📜 OPERACIONES.LOG<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
+    <div class="tbar">📜 OPERACIONES.LOG — demo local<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
     <div class="cont">
       <table><thead><tr><th>FECHA</th><th>ACCIÓN</th><th>PRECIO</th><th>EQUITY</th></tr></thead>
       <tbody id="tbody"><tr><td colspan="4" style="color:#5aa">>> sin operaciones... el sistema vigila el mercado <span class="blink">_</span></td></tr></tbody></table>
@@ -149,10 +165,15 @@
 
   <div class="status"><span><span class="led"></span>SISTEMA EN LÍNEA</span>
     <span id="reloj">--:--:-- UTC</span>
-    <span>DATOS: BINANCE</span><span>MODO: DEMO</span></div>
+    <span>DATOS: BINANCE + KRAKEN</span><span>MODO: DEMO</span></div>
 </div>
 
 <script>
+// ============ CONFIGURA AQUI TU GIST ============
+// URL raw de tu gist: https://gist.githubusercontent.com/TU_USUARIO/ID_DEL_GIST/raw/estado.json
+const GIST_RAW = 'https://gist.githubusercontent.com/FroDev-CR/ca83049c7861dd15d87f165d75a16633/raw/estado.json';
+// ================================================
+
 const API = 'https://data-api.binance.vision/api/v3';
 const FEE = 0.001, CAPITAL = 15;
 const fmt = n => '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -243,6 +264,40 @@ function pintarPanel(precio){
   }
 }
 
+// ---- Bot real 24/7 (lee el gist que escribe GitHub Actions) ----
+async function botReal(){
+  const msg = document.getElementById('n-msg');
+  if (GIST_RAW.includes('PEGA_AQUI')){
+    if (msg) msg.innerHTML = '>> NUBE SIN CONFIGURAR — falta la URL del gist en index.html';
+    return;
+  }
+  try {
+    const r = await fetch(GIST_RAW + '?t=' + Date.now());
+    const st = await r.json();
+    const pnl = (st.equity / st.capital_inicial - 1) * 100;
+    document.getElementById('n-equity').textContent = fmt(st.equity);
+    const p = document.getElementById('n-pnl');
+    p.textContent = (pnl>=0?'+':'') + pnl.toFixed(2) + '%';
+    p.className = 'val ' + (pnl>=0?'verde':'rojo');
+    const pos = document.getElementById('n-pos');
+    pos.textContent = st.posicion ? 'COMPRADO' : 'FUERA';
+    pos.className = 'val ' + (st.posicion ? 'verde' : 'mag');
+    const mins = Math.round((Date.now() - new Date(st.ultima_revision)) / 60000);
+    document.getElementById('n-rev').textContent = mins <= 1 ? 'ahora' : `hace ${mins} min`;
+    const tb = document.getElementById('n-tbody');
+    if (st.trades && st.trades.length){
+      tb.innerHTML = st.trades.slice().reverse().slice(0,8).map(t =>
+        `<tr><td>${t.t.slice(0,16).replace('T',' ')}</td>
+         <td class="${t.a==='COMPRA'?'verde':'rojo'}">${t.a}</td>
+         <td>${fmtP(t.p)}</td><td>${fmt(t.eq)}</td></tr>`).join('');
+    } else {
+      tb.innerHTML = '<tr><td colspan="4" style="color:#5aa">>> la nube vigila el mercado, sin trades aun</td></tr>';
+    }
+  } catch(e){
+    if (msg) msg.innerHTML = '>> error leyendo la nube: ' + e.message;
+  }
+}
+
 async function tick(){
   try {
     const r = await fetch(`${API}/ticker/price?symbol=BTCUSDT`);
@@ -318,10 +373,11 @@ setInterval(() => {
     new Date().toISOString().slice(11,19) + ' UTC';
 }, 1000);
 
-cargar(); tick(); cambio24h();
+cargar(); tick(); cambio24h(); botReal();
 setInterval(tick, 5000);
 setInterval(cargar, 60000);
 setInterval(cambio24h, 60000);
+setInterval(botReal, 60000);
 </script>
 </body>
 </html>
