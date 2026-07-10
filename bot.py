@@ -1,16 +1,17 @@
 """
-Bot de trading BTC/USDT — modo paper (simulado) y live (dinero real).
+Bot de trading BTC/USDT — modo paper (simulado) y live (dinero real),
+con agente de IA opcional como oficial de riesgo (veto).
 
 Uso:
     python bot.py            -> corre en loop según config.json
     python bot.py --once     -> un solo ciclo (para probar)
 
-Estrategia: cruce de medias SMA sobre velas horarias.
-El estado se guarda en state.json (sobrevive reinicios).
+Arquitectura de 3 capas:
+    1. Estrategia SMA decide (determinista, backtesteada)
+    2. Agente IA valida y puede VETAR el trade (si hay gemini_api_key)
+    3. Límites duros en código: max por trade y kill-switch
 
-MODO LIVE: requiere `pip install ccxt`, API keys de Binance SIN permiso
-de retiros, y entender que puedes perder el dinero. Los límites
-max_usd_por_trade y stop_si_equity_baja_de_usd son obligatorios.
+El estado se guarda en state.json (sobrevive reinicios).
 """
 
 import json
@@ -28,7 +29,7 @@ LOG_FILE = os.path.join(HERE, "results", "trades_log.csv")
 
 # ---------- Datos ----------
 
-def get_klines(symbol: str, interval: str, limit: int = 100) -> list[float]:
+def get_klines(symbol: str, interval: str, limit: int = 100) -> list:
     """Cierres de las últimas `limit` velas desde la API pública de Binance."""
     url = (f"https://data-api.binance.vision/api/v3/klines"
            f"?symbol={symbol}&interval={interval}&limit={limit}")
@@ -39,12 +40,51 @@ def get_klines(symbol: str, interval: str, limit: int = 100) -> list[float]:
 
 # ---------- Estrategia ----------
 
-def señal_sma(closes: list[float], fast: int, slow: int) -> int:
+def señal_sma(closes: list, fast: int, slow: int) -> int:
     """1 = estar comprado, 0 = estar fuera. Usa solo velas cerradas."""
     cerradas = closes[:-1]  # la última vela aún no cierra: no usarla
     sma_fast = sum(cerradas[-fast:]) / fast
     sma_slow = sum(cerradas[-slow:]) / slow
     return 1 if sma_fast > sma_slow else 0
+
+
+# ---------- Agente de riesgo (opcional) ----------
+
+def veto_agente(accion: str, precio: float, closes: list) -> tuple:
+    """
+    Pregunta a Gemini si hay razón para vetar el trade.
+    Devuelve (veto: bool, razon: str). Si no hay key o la API falla,
+    NO veta: el bot nunca depende del agente para funcionar.
+    """
+    ag = CONFIG.get("agente", {})
+    key = ag.get("gemini_api_key", "")
+    if not key:
+        return False, ""
+
+    cambio24 = (closes[-1] / closes[-25] - 1) * 100 if len(closes) > 25 else 0.0
+    ultimos = [round(c, 2) for c in closes[-12:]]
+    prompt = (
+        "Eres el oficial de riesgo de un bot de trading de BTC spot con ~$15 USD. "
+        f"El bot quiere ejecutar {accion} a ${precio:,.0f}. "
+        f"Cambio ultimas 24h: {cambio24:+.2f}%. Ultimos 12 cierres horarios: {ultimos}. "
+        "Responde EXACTAMENTE 'APROBAR' o 'VETAR: <razon en menos de 15 palabras>'. "
+        "Veta SOLO ante condiciones extremas (ej. movimiento >10% en 24h, "
+        "datos claramente anomalos). En caso de duda: APROBAR."
+    )
+    url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+           f"{ag.get('gemini_model', 'gemini-2.5-flash')}:generateContent?key={key}")
+    body = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode()
+    req = urllib.request.Request(url, data=body,
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=25) as r:
+            j = json.load(r)
+        texto = j["candidates"][0]["content"]["parts"][0]["text"].strip()
+        if texto.upper().startswith("VETAR"):
+            return True, texto.split(":", 1)[-1].strip()
+        return False, "aprobado"
+    except Exception as e:
+        return False, f"agente no disponible ({type(e).__name__})"
 
 
 # ---------- Estado ----------
@@ -133,17 +173,32 @@ def ciclo():
         sys.exit(1)
 
     accion = "esperar"
+    quiere = None
     if señal == 1 and state["posicion"] == 0:
-        (comprar_live if modo == "live" else comprar_paper)(state, precio)
-        state["posicion"], accion = 1, "COMPRA"
-        state["trades"] += 1
+        quiere = "COMPRA"
     elif señal == 0 and state["posicion"] == 1:
-        (vender_live if modo == "live" else vender_paper)(state, precio)
-        state["posicion"], accion = 0, "VENTA"
-        state["trades"] += 1
+        quiere = "VENTA"
+
+    if quiere:
+        veto, razon = veto_agente(quiere, precio, closes)
+        if veto:
+            accion = f"{quiere} VETADA"
+            print(f"  [agente] VETO a {quiere}: {razon}")
+            log_trade(f"VETO_{quiere}", precio, equity, modo)
+        else:
+            if razon and razon != "aprobado" and not razon.startswith("agente no"):
+                print(f"  [agente] {razon}")
+            if quiere == "COMPRA":
+                (comprar_live if modo == "live" else comprar_paper)(state, precio)
+                state["posicion"] = 1
+            else:
+                (vender_live if modo == "live" else vender_paper)(state, precio)
+                state["posicion"] = 0
+            accion = quiere
+            state["trades"] += 1
 
     equity = state["usd"] + state["btc"] * precio
-    if accion != "esperar":
+    if accion in ("COMPRA", "VENTA"):
         log_trade(accion, precio, equity, modo)
     save_state(state)
 
@@ -166,6 +221,8 @@ def ciclo():
 if __name__ == "__main__":
     if CONFIG["mode"] == "live":
         print("*** MODO LIVE: dinero real. Ctrl+C para detener. ***")
+    if CONFIG.get("agente", {}).get("gemini_api_key"):
+        print("Agente de riesgo: ACTIVO (Gemini)")
     if "--once" in sys.argv:
         ciclo()
     else:

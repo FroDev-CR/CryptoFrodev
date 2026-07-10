@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CRYPTOBOT 2000 ~ BTC/USDT</title>
+<title>CryptoFroDev ~ BTC/USDT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
@@ -62,19 +62,42 @@
   button { font-family:'VT323', monospace; font-size:17px; background:var(--gris); color:#000;
            border:2px outset #fff; padding:2px 14px; cursor:pointer; }
   button:active { border-style:inset; }
+  input[type=text] { background:#000; border:2px inset var(--gris); color:var(--lime);
+           font-family:'VT323', monospace; font-size:18px; padding:4px 8px; }
+  input[type=text]:focus { outline:none; box-shadow:0 0 8px #00ff6655; }
+
+  .robot { width:130px; text-align:center; flex-shrink:0; }
+  .antena { width:4px; height:14px; background:var(--gris); margin:10px auto 0; }
+  .foco { width:10px; height:10px; border-radius:50%; background:var(--rojo);
+          box-shadow:0 0 8px var(--rojo); margin:-24px auto 14px; animation:blink 1.4s steps(1) infinite; }
+  .cabeza { width:96px; height:76px; margin:auto; border:2px outset #fff; border-radius:10px;
+            background:linear-gradient(180deg,#e8edf5,#97a1b3); padding-top:16px; }
+  .ojos { display:flex; justify-content:center; gap:16px; }
+  .ojo { width:16px; height:16px; background:var(--cyan); box-shadow:0 0 10px var(--cyan);
+         animation:parpadeo 4.5s infinite; }
+  @keyframes parpadeo { 0%,91%,100% { transform:scaleY(1); } 94% { transform:scaleY(.1); } }
+  .boca { width:44px; height:6px; background:#16202e; margin:14px auto 0; }
+  .robot.hablando .boca { animation:hablar .22s steps(2) infinite; }
+  @keyframes hablar { 50% { height:14px; margin-top:6px; } }
+  .nombre { font-size:15px; color:var(--cyan); margin-top:8px; text-shadow:0 0 6px var(--cyan); }
+
+  #chatlog { height:190px; overflow-y:auto; border:2px inset var(--gris); background:#000;
+             padding:8px 10px; font-size:18px; line-height:1.35; }
+  #chatlog .yo { color:var(--cyan); }
+  #chatlog .bot { color:var(--lime); }
+  #chatlog p { margin:0 0 8px; }
 
   .status { display:flex; gap:18px; align-items:center; border:2px inset var(--gris);
             background:#000; padding:4px 10px; font-size:17px; color:#7fa; flex-wrap:wrap; }
   .led { width:10px; height:10px; border-radius:50%; background:var(--lime); box-shadow:0 0 8px var(--lime);
          display:inline-block; margin-right:6px; animation:blink 2s steps(1) infinite; }
-  .pie { text-align:center; color:#39d; margin:14px 0 6px; font-size:17px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="marquee"><span id="cinta">*** CRYPTOBOT 2000 *** CONECTANDO CON EL MERCADO... *** BIENVENIDO OPERADOR ***</span></div>
+  <div class="marquee"><span id="cinta">*** CRYPTOFRODEV *** CONECTANDO CON EL MERCADO... *** BIENVENIDO OPERADOR ***</span></div>
 
-  <h1>CRYPTOBOT 2000</h1>
+  <h1>CryptoFroDev</h1>
   <p class="sub">~ sistema de especulación automática ~ BTC/USDT ~ <span class="blink">█</span></p>
   <div class="rainbow"></div>
 
@@ -84,6 +107,24 @@
       <span id="senal" class="cian" style="font-size:22px">[ CARGANDO... ]</span></div>
     <div class="cont" style="padding-top:4px"><div id="chart"></div>
       <div style="font-size:16px;color:#5aa;margin-top:4px">— <span class="cian">SMA 20</span> / <span class="mag">SMA 60</span> · el demo compra cuando la cian cruza arriba de la magenta</div>
+    </div>
+  </div>
+
+  <div class="win">
+    <div class="tbar">🤖 FRODEV-3000.EXE — asistente de a bordo<span class="btns"><i>_</i><i>□</i><i>X</i></span></div>
+    <div class="cont" style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;">
+      <div class="robot" id="robot">
+        <div class="antena"></div><div class="foco"></div>
+        <div class="cabeza"><div class="ojos"><div class="ojo"></div><div class="ojo"></div></div><div class="boca"></div></div>
+        <div class="nombre">FRODEV-3000</div>
+      </div>
+      <div style="flex:1; min-width:260px;">
+        <div id="chatlog"><p class="bot">FRODEV-3000&gt; SALUDOS OPERADOR. soy el asistente de a bordo. preguntame que significa cualquier cosa de esta pantalla, mae. <span class="blink">█</span></p></div>
+        <form id="chatform" style="display:flex; gap:6px; margin-top:8px;">
+          <input type="text" id="chatin" style="flex:1" placeholder="escribe tu pregunta..." maxlength="300" autocomplete="off">
+          <button type="submit">ENVIAR &gt;</button>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -109,8 +150,6 @@
   <div class="status"><span><span class="led"></span>SISTEMA EN LÍNEA</span>
     <span id="reloj">--:--:-- UTC</span>
     <span>DATOS: BINANCE</span><span>MODO: DEMO</span></div>
-
-  <p class="pie">© 2000-2026 CRYPTOBOT™ · mejor visto en 800×600 · esto no es asesoría financiera · dinero 100% ficticio</p>
 </div>
 
 <script>
@@ -216,7 +255,7 @@ async function tick(){
     ultimoPrecio = precio;
     pintarPanel(precio);
     document.getElementById('cinta').textContent =
-      ` *** CRYPTOBOT 2000 *** BTC ${fmtP(precio)} *** SEÑAL: ${senalTxt} *** EL QUE NO ARRIESGA NO PIERDE *** `;
+      ` *** CRYPTOFRODEV *** BTC ${fmtP(precio)} *** SEÑAL: ${senalTxt} *** SISTEMA OPERANDO *** `;
   } catch(e){}
 }
 
@@ -229,6 +268,50 @@ async function cambio24h(){
     el.className = c>=0 ? 'verde' : 'rojo';
   } catch(e){}
 }
+
+// ---- Chat con FRODEV-3000 ----
+const historial = [];
+const chatlog = document.getElementById('chatlog');
+const robot = document.getElementById('robot');
+
+function burbuja(rol, texto){
+  const p = document.createElement('p');
+  p.className = rol === 'user' ? 'yo' : 'bot';
+  p.textContent = (rol === 'user' ? 'TU> ' : 'FRODEV-3000> ') + texto;
+  chatlog.appendChild(p);
+  chatlog.scrollTop = chatlog.scrollHeight;
+  return p;
+}
+
+document.getElementById('chatform').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const inp = document.getElementById('chatin');
+  const q = inp.value.trim();
+  if (!q) return;
+  inp.value = '';
+  burbuja('user', q);
+  historial.push({ role: 'user', text: q });
+  robot.classList.add('hablando');
+  const espera = burbuja('bot', 'PROCESANDO...');
+  try {
+    const eq = estado.usd + estado.btc * (ultimoPrecio || 0);
+    const contexto = { precio_btc: ultimoPrecio, senal: senalTxt,
+      equity_demo: +eq.toFixed(2), posicion: estado.pos ? 'COMPRADO' : 'FUERA',
+      trades_demo: estado.trades.length };
+    const r = await fetch('/api/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: historial.slice(-8), contexto })
+    });
+    const j = await r.json();
+    const t = j.text || '[ERROR DE NUCLEO]';
+    espera.textContent = 'FRODEV-3000> ' + t;
+    historial.push({ role: 'model', text: t });
+  } catch (err) {
+    espera.textContent = 'FRODEV-3000> [OFFLINE] mi cerebro vive en Vercel. despliega con GEMINI_API_KEY configurada, mae.';
+  }
+  robot.classList.remove('hablando');
+  chatlog.scrollTop = chatlog.scrollHeight;
+});
 
 setInterval(() => {
   document.getElementById('reloj').textContent =
