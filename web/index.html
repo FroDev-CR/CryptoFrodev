@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root { --lime:#00ff66; --cyan:#00e5ff; --mag:#ff00d4; --rojo:#ff3355; --gris:#c0c0c0; }
   * { margin:0; box-sizing:border-box; }
@@ -124,6 +126,7 @@
       <div id="eqchart" style="margin-top:12px"></div>
       <table style="margin-top:10px"><thead><tr><th>FECHA</th><th>ACCIÓN</th><th>PRECIO</th><th>EQUITY</th></tr></thead>
       <tbody id="n-tbody"><tr><td colspan="4" style="color:#5aa" id="n-msg">>> conectando con la nube... <span class="blink">_</span></td></tr></tbody></table>
+      <div style="margin-top:10px;text-align:right"><button onclick="exportarPDF()">📄 EXPORTAR PDF</button></div>
       <div style="font-size:16px;color:#5aa;margin-top:6px">este portafolio vive en la nube y opera aunque nadie mire la página · revisa el mercado cada 15 min · dinero ficticio</div>
     </div>
   </div>
@@ -255,6 +258,40 @@ async function botReal(){
   } catch(e){
     if (msg) msg.innerHTML = '>> error leyendo la nube: ' + e.message;
   }
+}
+
+function exportarPDF(){
+  if (!nubeSt){ alert('La nube aun no carga, intenta en unos segundos.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const st = nubeSt;
+  const pnl = (st.equity / st.capital_inicial - 1) * 100;
+  doc.setFont('courier','bold'); doc.setFontSize(16);
+  doc.text('CRYPTOFRODEV - REPORTE DE OPERACIONES', 14, 18);
+  doc.setFont('courier','normal'); doc.setFontSize(10);
+  const ahora = new Date().toISOString().slice(0,16).replace('T',' ') + ' UTC';
+  doc.text('Generado: ' + ahora, 14, 26);
+  doc.text('Estrategia: cruce SMA 20/60 en velas de 1h (BTC/USD) - paper trading', 14, 32);
+  doc.text('Capital inicial: $' + st.capital_inicial.toFixed(2) + '   Equity actual: $' + st.equity.toFixed(2) +
+           '   Ganancia: ' + (pnl>=0?'+':'') + pnl.toFixed(2) + '%', 14, 38);
+  doc.text('Posicion: ' + (st.posicion ? 'COMPRADO' : 'FUERA') + '   Precio BTC: $' + (st.precio||0).toLocaleString() +
+           '   Total operaciones: ' + (st.trades||[]).length, 14, 44);
+  const filas = (st.trades||[]).map((t,i) => {
+    let res = '';
+    if (t.a === 'VENTA' && i > 0 && st.trades[i-1].a === 'COMPRA'){
+      res = (((t.eq / st.trades[i-1].eq) - 1) * 100).toFixed(2) + '%';
+    }
+    return [i+1, t.t.replace('T',' ').slice(0,19), t.a, '$'+t.p.toLocaleString(), '$'+t.eq.toFixed(2), res];
+  });
+  doc.autoTable({ startY: 50,
+    head: [['#','Fecha (UTC)','Accion','Precio BTC','Equity','Resultado del trade']],
+    body: filas.length ? filas : [['-','sin operaciones aun','-','-','-','-']],
+    styles: { font:'courier', fontSize: 9 },
+    headStyles: { fillColor: [0,80,60] } });
+  const y = doc.lastAutoTable.finalY + 8;
+  doc.setFontSize(8);
+  doc.text('Dinero 100% ficticio (paper trading). Esto no es asesoria financiera.', 14, y);
+  doc.save('cryptofrodev_operaciones_' + new Date().toISOString().slice(0,10) + '.pdf');
 }
 
 async function tick(){
